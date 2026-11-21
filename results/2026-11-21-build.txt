@@ -1,0 +1,10 @@
+pgcache image: sha256:821b027fc29cfc294071dbd701d4107770e34de31852ed52275ea92bcd4306cb
+clients 40, 30 s each, pgbench -M extended; each database 2 CPUs, 3 GB
+tickets_plain via primary          9150 tps      4.371 ms | hit       0  miss       0  rls_skipped       0 | writer resolves       0 taking    0.0 s
+tickets_plain via pgcache         14587 tps      2.742 ms | hit  437267  miss       1  rls_skipped       0 | writer resolves      40 taking    0.0 s
+tickets_inline via primary         7545 tps      5.302 ms | hit       0  miss       0  rls_skipped       0 | writer resolves       0 taking    0.0 s
+tickets_inline via pgcache        13927 tps      2.872 ms | hit  417353  miss       1  rls_skipped       0 | writer resolves      40 taking    0.0 s
+tickets_fn via primary             7149 tps      5.595 ms | hit       0  miss       0  rls_skipped       0 | writer resolves       0 taking    0.0 s
+tickets_fn via pgcache            14536 tps      2.752 ms | hit  435417  miss       1  rls_skipped       0 | writer resolves      40 taking    0.1 s
+tickets_volatile via primary       7309 tps      5.472 ms | hit       0  miss       0  rls_skipped       0 | writer resolves       0 taking    0.0 s
+tickets_volatile via pgcache       4246 tps      9.421 ms | hit       0  miss  127167  rls_skipped  127167 | writer resolves  127167 taking   29.9 s

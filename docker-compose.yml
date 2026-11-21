@@ -1,0 +1,41 @@
+# One Postgres and one pgcache in front of it, each capped at 2 CPUs and 3 GB.
+# Nothing is published on the host except pgcache's metrics (127.0.0.1:9099).
+services:
+  primary:
+    # the Debian image: pgcache wants its own Postgres (glibc) to sort text as the origin does
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: repro
+      # pgcache's own Postgres wants the origin's money/number/time locales
+      POSTGRES_INITDB_ARGS: --lc-monetary=C --lc-numeric=C --lc-time=C
+    command: [postgres, -c, wal_level=logical, -c, max_connections=300, -c, shared_buffers=1GB, -c, jit=off]
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    shm_size: 1g
+    cpus: 2
+    mem_limit: 3g
+    healthcheck:
+      # over TCP: the entrypoint's first-start server listens on the socket only
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d repro"]
+      interval: 2s
+      timeout: 3s
+      retries: 100
+
+  pgcache:
+    # pinned to the build of 2026-11-21 that the README's numbers are from;
+    # PGCACHE_IMAGE=pgcache/pgcache:latest ./run.sh for the newest
+    image: ${PGCACHE_IMAGE:-pgcache/pgcache@sha256:821b027fc29cfc294071dbd701d4107770e34de31852ed52275ea92bcd4306cb}
+    depends_on:
+      primary: { condition: service_healthy }
+    environment:
+      UPSTREAM_URL: postgres://postgres:postgres@primary:5432/repro
+      NUM_WORKERS: "2"
+      PUBLICATION: pgcache_pub
+      SLOT: pgcache_slot
+      PGCACHE_TELEMETRY: "off"
+    ports: ["127.0.0.1:9099:9090"]
+    shm_size: 1g
+    cpus: 2
+    mem_limit: 3g
